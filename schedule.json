@@ -1,0 +1,65 @@
+{
+    "timezone": "America/Los_Angeles",
+    "weekDays": {
+        "Monday": {
+            "event": "Practice",
+            "start": "17:00",
+            "end": null,
+            "opponent": "open bots",
+            "goals": [
+                "win"
+            ],
+            "notes": "review cache demos"
+        },
+        "Tuesday": {
+            "event": "Match",
+            "start": "19:30",
+            "end": "20:00",
+            "opponent": "whocares",
+            "goals": [],
+            "notes": null
+        },
+        "Wednesday": {
+            "event": "Match",
+            "start": "19:30",
+            "end": null,
+            "opponent": null,
+            "goals": [
+                "win"
+            ],
+            "notes": null
+        },
+        "Thursday": {
+            "event": "Practice",
+            "start": "17:00",
+            "end": "20:00",
+            "opponent": null,
+            "goals": [],
+            "notes": null
+        },
+        "Friday": {
+            "event": null,
+            "start": null,
+            "end": null,
+            "opponent": null,
+            "goals": [],
+            "notes": null
+        },
+        "Saturday": {
+            "event": null,
+            "start": null,
+            "end": null,
+            "opponent": null,
+            "goals": [],
+            "notes": null
+        },
+        "Sunday": {
+            "event": "Match",
+            "start": "17:00",
+            "end": null,
+            "opponent": "open pods",
+            "goals": [],
+            "notes": null
+        }
+    }
+}
