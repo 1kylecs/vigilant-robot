@@ -12,7 +12,13 @@ const cron = require("node-cron");
 
 
 
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const { Client,
+        GatewayIntentBits,
+        EmbedBuilder,
+        ActionRowBuilder,
+        ButtonBuilder,
+        ButtonStyle 
+} = require("discord.js");
 
 //bot intent
 const client = new Client({
@@ -146,7 +152,7 @@ function formatDay(day) {
     if(!day){
         return null;
     }
-    
+
     return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
 }
 
@@ -231,7 +237,7 @@ function deleteMessagesAfter(message, reply, time) {
     }, time);
 }
 
-function createScheduleEmbed(user) {
+function createScheduleMessage(user) {
 
     const embed = new EmbedBuilder()
         .setTitle("📅 CS2 Weekly Schedule")
@@ -242,6 +248,8 @@ function createScheduleEmbed(user) {
             text: `Updated by ${user.displayName ?? user.username}`
         })
         .setColor(0x00FF00);
+
+    const rows = [];
 
     for (const day in schedule.weekDays) {
 
@@ -295,9 +303,24 @@ function createScheduleEmbed(user) {
 
             fieldText += `Goals:\n`;
 
-            event.goals.forEach(goal => {
-                fieldText += `• ${goal}\n`;
+            const row = new ActionRowBuilder();
+
+            event.goals.forEach((goal, index) => {
+                const checkbox = goal.completed ? "✅" : "⬜";
+                
+                fieldText += `${checkbox} ${goal.text}\n`;
+
+                rows.addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`goal_${day}_${index}`)
+                        .setLabel(`${checkbox} ${goal.text}`)
+                        .setStyle(
+                            goal.completed ? ButtonStyle.Success : ButtonStyle.Secondary
+                        )
+                );
             });
+
+            rows.push(row);
         }
 
         if (event.notes) {
@@ -313,7 +336,10 @@ function createScheduleEmbed(user) {
         });
     }
 
-    return embed;
+    return {
+        embeds: [embed],
+        components: rows
+    };
 }
 
 //update schedule
@@ -321,7 +347,8 @@ async function updateScheduleMessage(channel, user) {
 
     config.scheduleChannelID = channel.id;
 
-    const scheduleEmbed = createScheduleEmbed(user);
+    const scheduleEmbed = createScheduleMessage(user);
+    const goalButtons = createGoalButtons();
 
 
     if (config.scheduleMessageID !== null) {
@@ -333,7 +360,8 @@ async function updateScheduleMessage(channel, user) {
             );
 
             await oldMessage.edit({
-                embeds: [scheduleEmbed]
+                embeds: [scheduleEmbed],
+                components: goalButtons
             });
 
             console.log("Schedule updated");
@@ -345,7 +373,8 @@ async function updateScheduleMessage(channel, user) {
             console.log("Old schedule not found. Creating new one.");
 
             const newMessage = await channel.send({
-                embeds: [scheduleEmbed]
+                embeds: [scheduleEmbed],
+                components: goalButtons
             });
 
             config.scheduleMessageID = newMessage.id;
@@ -361,7 +390,8 @@ async function updateScheduleMessage(channel, user) {
     else {
 
         const newMessage = await channel.send({
-            embeds: [scheduleEmbed]
+            embeds: [scheduleEmbed],
+            components: goalButtons
         });
 
 
@@ -409,7 +439,7 @@ client.once("clientReady", () => {
     );
 });
 
-//bot send schedule function
+//bot message event handler
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
 
@@ -427,32 +457,32 @@ client.on("messageCreate", async (message) => {
         const helpMessage =
             `📅 **CS2 Schedule Bot Help**
 
-**Update Schedule:**
-\`!update [day] field value, field value\`
+            **Update Schedule:**
+            \`!update [day] field value, field value\`
 
-The day is optional. If no day is provided, the current day will be updated.
+            The day is optional. If no day is provided, the current day will be updated.
 
-**Accepted Fields:**
-• \`event\` - Match, Practice, or null
-• \`start\` - Start time
-• \`end\` - End time
-• \`opponent\` - Opposing team
-• \`notes\` - Additional information
+            **Accepted Fields:**
+            • \`event\` - Match, Practice, or null
+            • \`start\` - Start time
+            • \`end\` - End time
+            • \`opponent\` - Opposing team
+            • \`notes\` - Additional information
 
-**Examples:**
+            **Examples:**
 
-Updating today's schedule:
-\`!update event Match, start 5pm PST, opponent Team Liquid\`
+            Updating today's schedule:
+            \`!update event Match, start 5pm PST, opponent Team Liquid\`
 
-Updating a specific day:
-\`!update sunday event Match, start 5pm PST, opponent Team Liquid\`
+            Updating a specific day:
+            \`!update sunday event Match, start 5pm PST, opponent Team Liquid\`
 
-Multiple fields:
-\`!update tuesday event Practice, start 6pm PST, end 8pm PST\`
+            Multiple fields:
+            \`!update tuesday event Practice, start 6pm PST, end 8pm PST\`
 
-Clearing an event:
-\`!update friday event null\`
-`;
+            Clearing an event:
+            \`!update friday event null\`
+            `;
 
         const help = await message.reply(helpMessage);
 
@@ -714,6 +744,33 @@ Clearing an event:
             );
 
     }
+});
+
+//button click handler
+client.on("interactionCreate", async interaction => {
+
+    if (interaction.isButton()){
+        return;
+    }
+
+    const parts = interaction.customId.split("_");
+
+    if(parts[0] !== "goal"){
+        return;
+    }
+
+    const day = parts[1];
+    const index = Number(parts[2]);
+
+    schedule.weekDays[day].goals[index].completed = !schedule.weekDays[days].goals[index].compelted;
+
+    saveSchedule();
+
+    await interaction.update(
+        createScheduleMessage(
+            interaction.user
+        )
+    );
 });
 
 client.login(process.env.TOKEN);
