@@ -310,7 +310,7 @@ function createScheduleMessage(user) {
                 
                 fieldText += `${checkbox} ${goal.text}\n`;
 
-                rows.addComponents(
+                row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(`goal_${day}_${index}`)
                         .setLabel(`${checkbox} ${goal.text}`)
