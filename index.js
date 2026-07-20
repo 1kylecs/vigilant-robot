@@ -317,7 +317,7 @@ function createScheduleMessage(user) {
 
             event.goals.forEach(goal => {
 
-                fieldText += `• ${goal.text}\n`;
+                fieldText += `• ${goal}\n`;
 
             });
         }
@@ -547,9 +547,13 @@ client.on("messageCreate", async (message) => {
             // check field exists
             if (!allowedFields.includes(field)) {
 
-                const errorMessage = await message.reply(
-                    `Invalid field: ${field}`
-                );
+                let errorText = `Invalid field: ${field}.`;
+
+                if (field === "goals") {
+                    errorText += " Did you mean to use !goals?";
+                }
+
+                const errorMessage = await message.reply(errorText);
 
                 deleteMessagesAfter(
                     message,
@@ -711,6 +715,25 @@ client.on("messageCreate", async (message) => {
             return;
         }
 
+        if(goalsText.toLowerCase() === "null"){
+            schedule.weekDays[day].goals = [];
+
+            saveSchedule();
+
+            await updateScheduleMessage(
+                message.channel,
+                message.author
+            );
+
+            deleteMessagesAfter(
+                message,
+                null,
+                3000
+            );
+
+            return;
+        }
+
         const goals = goalsText.split(",");
 
         for (let goal of goals) {
@@ -720,12 +743,7 @@ client.on("messageCreate", async (message) => {
                 continue;
             }
 
-            schedule.weekDays[day].goals.push(
-                {
-                    text: goal,
-                    completed: false //assume goal isnt completed upon addition
-                }
-            );
+            schedule.weekDays[day].goals.push(goal);
         }
 
         saveSchedule();
