@@ -1,9 +1,16 @@
 require("dotenv").config();
 
+//include json files
 const schedule = require("./schedule.json");
-const fs = require("fs");
+const defaultSchedule = require("./defaultSchedule.json");
 const config = require("./config.json");
+
+//imported libraries
+const fs = require("fs");
 const { DateTime } = require("luxon");
+const cron = require("node-cron");
+
+
 
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 
@@ -52,6 +59,36 @@ function getWeekRange() {
     });
 
     return `${monday.toFormat("MMMM d")} - ${sunday.toFormat("MMMM d, yyyy")}`;
+}
+
+//grab the current day from args
+function getDayFromArgs(args) {
+
+    const days = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+    ];
+
+    const possibleDay = args[0]?.toLowerCase();
+
+    if (days.includes(possibleDay)) {
+        return {
+            day: possibleDay.charAt(0).toUpperCase() + possibleDay.slice(1),
+            startIndex: 1
+        };
+    }
+
+    return {
+        day: DateTime.now()
+            .setZone(schedule.timezone)
+            .toFormat("cccc"),
+        startIndex: 0
+    };
 }
 
 //timezone to team time conversion (PST)
@@ -146,6 +183,38 @@ function saveSchedule() {
     );
 }
 
+//reset weekly schedule to default
+function resetSchedule() {
+
+    schedule.weekDays = structuredClone(
+        defaultSchedule.weekDays
+    );
+
+    schedule.lastResetWeek = DateTime.now()
+        .setZone(schedule.timezone)
+        .toFormat("kkkk-WW");
+
+    saveSchedule();
+
+    console.log("Weekly schedule reset to default template.");
+}
+
+//check the week
+function checkForNewWeek() {
+
+    const currentWeek = DateTime.now()
+        .setZone(schedule.timezone)
+        .toFormat("kkkk-WW");
+
+    if (schedule.lastResetWeek !== currentWeek) {
+        resetSchedule();
+
+        return true;
+    }
+
+    return false;
+}
+
 //delete error messages
 function deleteMessagesAfter(message, reply, time) {
     setTimeout(() => {
@@ -165,7 +234,7 @@ function createScheduleEmbed(user) {
             `**Week of ${getWeekRange()}**`)
         .setTimestamp()
         .setFooter({
-            text: `Updated by ${user.displayName}`
+            text: `Updated by ${user.displayName ?? user.username}`
         })
         .setColor(0x00FF00);
 
@@ -245,6 +314,8 @@ function createScheduleEmbed(user) {
 //update schedule
 async function updateScheduleMessage(channel, user) {
 
+    config.scheduleChannelID = channel.id;
+
     const scheduleEmbed = createScheduleEmbed(user);
 
 
@@ -303,11 +374,41 @@ async function updateScheduleMessage(channel, user) {
 //connect succeful message
 client.once("clientReady", () => {
     console.log(`Logged in as ${client.user.tag}!`);
+
+    //check for new week
+    cron.schedule(
+        "0 0 * * *",
+        async () => {
+            console.log("Checking for new week...");
+
+            if (checkForNewWeek()) {
+                try {
+                    const channel = await client.channels.fetch(
+                        config.scheduleChannelID
+                    );
+
+                    await updateScheduleMessage(
+                        channel,
+                        client.user
+                    );
+
+                    console.log("Schedule reset to default.");
+                }
+                catch (error) {
+                    console.log(error);
+                }
+            }
+        }, {
+        timezone: schedule.timezone
+    }
+    );
 });
 
 //bot send schedule function
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
+
+    checkForNewWeek();
 
     if (message.content === "!schedule") {
         await updateScheduleMessage(
@@ -355,33 +456,32 @@ client.on("messageCreate", async (message) => {
             .replace("!update", "")
             .trim();
 
-
-        // get day
         const parts = command.split(" ");
 
-        const day = formatDay(parts[0]);
+        let day;
+        let updatesText;
 
+        //check if first arg is a day
+        const possibleDay = formatDay(parts[0]);
 
-        if (!schedule.weekDays[day]) {
+        if(schedule.weekDays[possibleDay]){
 
-            const errorMessage = await message.reply(
-                "Invalid day."
-            );
+            //if day was provided
+            day = possibleDay;
 
-            deleteMessagesAfter(
-                message,
-                errorMessage,
-                10000
-            );
-
-            return;
+            updatesText = command
+                .substring(part[0].length)
+                .trim();
         }
+        else{
 
-
-        // remove day from command
-        const updatesText = command
-            .substring(parts[0].length)
-            .trim();
+            //no day provided
+            day = DateTime.now()
+                .setZone(schedule.timezone)
+                .toFormat("cccc");
+            
+                updatesText = command;
+        }
 
 
         // split updates by comma
@@ -396,7 +496,7 @@ client.on("messageCreate", async (message) => {
             const updateParts = update.split(" ");
 
 
-            const field = updateParts[0];
+            const field = updateParts[0].toLowerCase();
 
             let value = updateParts
                 .slice(1)
