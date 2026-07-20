@@ -13,11 +13,11 @@ const cron = require("node-cron");
 
 
 const { Client,
-        GatewayIntentBits,
-        EmbedBuilder,
-        ActionRowBuilder,
-        ButtonBuilder,
-        ButtonStyle 
+    GatewayIntentBits,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
 } = require("discord.js");
 
 //bot intent
@@ -97,6 +97,53 @@ function getDayFromArgs(args) {
     };
 }
 
+//create goal buttons helper
+function createGoalButtons() {
+
+    const rows = [];
+
+    for (const day in schedule.weekDays) {
+
+        const event = schedule.weekDays[day];
+
+        if (!event.goals || event.goals.length === 0) {
+            continue;
+        }
+
+        let row = new ActionRowBuilder();
+
+        event.goals.forEach((goal, index) => {
+
+            const checkbox = goal.completed ? "✅" : "⬜";
+
+            const button = new ButtonBuilder()
+                .setCustomId(`goal_${day}_${index}`)
+                .setLabel(`${checkbox} ${goal.text}`)
+                .setStyle(
+                    goal.completed
+                        ? ButtonStyle.Success
+                        : ButtonStyle.Secondary
+                );
+
+
+            // Discord max is 5 buttons per row
+            if (row.components.length === 5) {
+                rows.push(row);
+                row = new ActionRowBuilder();
+            }
+
+            row.addComponents(button);
+
+        });
+
+        if (row.components.length > 0) {
+            rows.push(row);
+        }
+    }
+
+    return rows;
+}
+
 //timezone to team time conversion (PST)
 function convertToTeamTime(time, timezone) {
 
@@ -149,7 +196,7 @@ function convertToTeamTime(time, timezone) {
 //format day
 function formatDay(day) {
 
-    if(!day){
+    if (!day) {
         return null;
     }
 
@@ -249,8 +296,6 @@ function createScheduleMessage(user) {
         })
         .setColor(0x00FF00);
 
-    const rows = [];
-
     for (const day in schedule.weekDays) {
 
         const event = schedule.weekDays[day];
@@ -303,24 +348,13 @@ function createScheduleMessage(user) {
 
             fieldText += `Goals:\n`;
 
-            const row = new ActionRowBuilder();
+            event.goals.forEach(goal => {
 
-            event.goals.forEach((goal, index) => {
                 const checkbox = goal.completed ? "✅" : "⬜";
-                
+
                 fieldText += `${checkbox} ${goal.text}\n`;
 
-                row.addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`goal_${day}_${index}`)
-                        .setLabel(`${checkbox} ${goal.text}`)
-                        .setStyle(
-                            goal.completed ? ButtonStyle.Success : ButtonStyle.Secondary
-                        )
-                );
             });
-
-            rows.push(row);
         }
 
         if (event.notes) {
@@ -338,7 +372,7 @@ function createScheduleMessage(user) {
 
     return {
         embeds: [embed],
-        components: rows
+        components: createGoalButtons()
     };
 }
 
@@ -347,8 +381,7 @@ async function updateScheduleMessage(channel, user) {
 
     config.scheduleChannelID = channel.id;
 
-    const scheduleEmbed = createScheduleMessage(user);
-    const goalButtons = createGoalButtons();
+    const scheduleMessage = createScheduleMessage(user);
 
 
     if (config.scheduleMessageID !== null) {
@@ -359,10 +392,7 @@ async function updateScheduleMessage(channel, user) {
                 config.scheduleMessageID
             );
 
-            await oldMessage.edit({
-                embeds: [scheduleEmbed],
-                components: goalButtons
-            });
+            await oldMessage.edit(scheduleMessage);
 
             console.log("Schedule updated");
 
@@ -372,10 +402,7 @@ async function updateScheduleMessage(channel, user) {
 
             console.log("Old schedule not found. Creating new one.");
 
-            const newMessage = await channel.send({
-                embeds: [scheduleEmbed],
-                components: goalButtons
-            });
+            const newMessage = await channel.send(scheduleMessage);
 
             config.scheduleMessageID = newMessage.id;
 
@@ -389,14 +416,9 @@ async function updateScheduleMessage(channel, user) {
 
     else {
 
-        const newMessage = await channel.send({
-            embeds: [scheduleEmbed],
-            components: goalButtons
-        });
-
+        const newMessage = await channel.send(scheduleMessage);
 
         config.scheduleMessageID = newMessage.id;
-
 
         fs.writeFileSync(
             "./config.json",
@@ -444,10 +466,10 @@ client.on("messageCreate", async (message) => {
 
     if (message.author.bot) return;
 
-    if(
-        message.content === "!schedule" || 
+    if (
+        message.content === "!schedule" ||
         message.content.startsWith("!update") ||
-        message.content.startsWith("!goals")){
+        message.content.startsWith("!goals")) {
         checkForNewWeek();
     }
 
@@ -677,77 +699,77 @@ client.on("messageCreate", async (message) => {
         );
     }
 
-    else if(message.content.startsWith("!goals")){
+    else if (message.content.startsWith("!goals")) {
 
         //remove !goals from command
         const command = message.content
             .replace("!goals", "")
             .trim();
-        
-            //split command
-            const parts = command.split(" ");
 
-            let day;
-            let goalsText;
+        //split command
+        const parts = command.split(" ");
 
-            //check if first word is a day
-            const possibleDay = formatDay(parts[0]);
+        let day;
+        let goalsText;
 
-            //if true
-            if (schedule.weekDays[possibleDay]){
-                day = possibleDay;
+        //check if first word is a day
+        const possibleDay = formatDay(parts[0]);
 
-                goalsText = command.substring(parts[0].length).trim();
-            }
-            else{
-                day = DateTime.now()
-                    .setZone(schedule.timezone)
-                    .toFormat("cccc");
-                
-                goalsText = command;
-            }
+        //if true
+        if (schedule.weekDays[possibleDay]) {
+            day = possibleDay;
 
-            if (!goalsText){
-                const errorMessage = await message.reply("Provide at least one goal to add.");
+            goalsText = command.substring(parts[0].length).trim();
+        }
+        else {
+            day = DateTime.now()
+                .setZone(schedule.timezone)
+                .toFormat("cccc");
 
-                deleteMessagesAfter(
-                    message,
-                    errorMessage,
-                    10000
-                );
+            goalsText = command;
+        }
 
-                return;
-            }
-
-            const goals = goalsText.split(",");
-
-            for (let goal of goals){
-                goal = goal.trim();
-
-                if (!goal){
-                    continue;
-                }
-
-                schedule.weekDays[day].goals.push(
-                    {
-                        text: goal,
-                        completed: false //assume goal isnt completed upon addition
-                    }
-                );
-            }
-
-            saveSchedule();
-
-            await updateScheduleMessage(
-                message.channel,
-                message.author
-            );
+        if (!goalsText) {
+            const errorMessage = await message.reply("Provide at least one goal to add.");
 
             deleteMessagesAfter(
                 message,
-                null,
-                3000
+                errorMessage,
+                10000
             );
+
+            return;
+        }
+
+        const goals = goalsText.split(",");
+
+        for (let goal of goals) {
+            goal = goal.trim();
+
+            if (!goal) {
+                continue;
+            }
+
+            schedule.weekDays[day].goals.push(
+                {
+                    text: goal,
+                    completed: false //assume goal isnt completed upon addition
+                }
+            );
+        }
+
+        saveSchedule();
+
+        await updateScheduleMessage(
+            message.channel,
+            message.author
+        );
+
+        deleteMessagesAfter(
+            message,
+            null,
+            3000
+        );
 
     }
 });
@@ -755,7 +777,7 @@ client.on("messageCreate", async (message) => {
 //button click handler
 client.on("interactionCreate", async interaction => {
 
-    if (!interaction.isButton()){
+    if (!interaction.isButton()) {
         return;
     }
 
@@ -763,7 +785,7 @@ client.on("interactionCreate", async interaction => {
 
     const parts = interaction.customId.split("_");
 
-    if(parts[0] !== "goal"){
+    if (parts[0] !== "goal") {
         return;
     }
 
