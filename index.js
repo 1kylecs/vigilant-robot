@@ -210,7 +210,7 @@ function resetSchedule() {
     console.log("Weekly schedule reset to default template.");
 }
 
-//check the week
+//check for new week
 function checkForNewWeek() {
 
     const currentWeek = DateTime.now()
