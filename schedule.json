@@ -8,7 +8,10 @@
             "end": null,
             "opponent": "open bots",
             "goals": [
-                "win"
+                {
+                    "text": "win",
+                    "completed": false
+                }
             ],
             "notes": "review cache demos"
         },
@@ -26,7 +29,10 @@
             "end": null,
             "opponent": null,
             "goals": [
-                "win"
+                {
+                    "text": "win",
+                    "completed": false
+                }
             ],
             "notes": null
         },

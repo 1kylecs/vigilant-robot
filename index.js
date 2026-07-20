@@ -142,6 +142,11 @@ function convertToTeamTime(time, timezone) {
 
 //format day
 function formatDay(day) {
+
+    if(!day){
+        return null;
+    }
+    
     return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
 }
 
@@ -422,24 +427,32 @@ client.on("messageCreate", async (message) => {
         const helpMessage =
             `📅 **CS2 Schedule Bot Help**
 
-            **Update Format:**
-            \`!update <day> field value, field value\`
+**Update Schedule:**
+\`!update [day] field value, field value\`
 
-            **Accepted Fields:**
-            • event
-            • start
-            • end
-            • opponent
-            • notes
+The day is optional. If no day is provided, the current day will be updated.
 
-            **Examples:**
+**Accepted Fields:**
+• \`event\` - Match, Practice, or null
+• \`start\` - Start time
+• \`end\` - End time
+• \`opponent\` - Opposing team
+• \`notes\` - Additional information
 
-            \`!update sunday event Match, start 5pm PST, opponent Team Liquid\`
+**Examples:**
 
-            \`!update tuesday event Practice, start 6pm PST, end 8pm PST\`
+Updating today's schedule:
+\`!update event Match, start 5pm PST, opponent Team Liquid\`
 
-            \`!update friday event null\`
-            `;
+Updating a specific day:
+\`!update sunday event Match, start 5pm PST, opponent Team Liquid\`
+
+Multiple fields:
+\`!update tuesday event Practice, start 6pm PST, end 8pm PST\`
+
+Clearing an event:
+\`!update friday event null\`
+`;
 
         const help = await message.reply(helpMessage);
 
@@ -464,7 +477,7 @@ client.on("messageCreate", async (message) => {
         //check if first arg is a day
         const possibleDay = formatDay(parts[0]);
 
-        if(schedule.weekDays[possibleDay]){
+        if (schedule.weekDays[possibleDay]) {
 
             //if day was provided
             day = possibleDay;
@@ -473,14 +486,14 @@ client.on("messageCreate", async (message) => {
                 .substring(part[0].length)
                 .trim();
         }
-        else{
+        else {
 
             //no day provided
             day = DateTime.now()
                 .setZone(schedule.timezone)
                 .toFormat("cccc");
-            
-                updatesText = command;
+
+            updatesText = command;
         }
 
 
@@ -626,6 +639,80 @@ client.on("messageCreate", async (message) => {
             null,
             3000
         );
+    }
+
+    else if(message.content.startsWith("!goals")){
+
+        //remove !goals from command
+        const command = message.content
+            .replace("!goals", "")
+            .trim();
+        
+            //split command
+            const parts = command.split(" ");
+
+            let day;
+            let goalsText;
+
+            //check if first word is a day
+            const possibleDay = formatDay(parts[0]);
+
+            //if true
+            if (schedule.weekDays[possibleDay]){
+                day = possibleDay;
+
+                goalsText = command.substring(parts[0].length).trim();
+            }
+            else{
+                day = DateTime.now()
+                    .setZone(schedule.timezone)
+                    .toFormat("cccc");
+                
+                goalsText = command;
+            }
+
+            if (!goalsText){
+                const errorMessage = await message.reply("Provide at least one goal to add.");
+
+                deleteMessagesAfter(
+                    message,
+                    errorMessage,
+                    10000
+                );
+
+                return;
+            }
+
+            const goals = goalsText.split(",");
+
+            for (let goal of goals){
+                goal = goal.trim();
+
+                if (!goal){
+                    continue;
+                }
+
+                schedule.weekDays[day].goals.push(
+                    {
+                        text: goal,
+                        completed: false //assume goal isnt completed upon addition
+                    }
+                );
+            }
+
+            saveSchedule();
+
+            await updateScheduleMessage(
+                message.channel,
+                message.author
+            );
+
+            deleteMessagesAfter(
+                message,
+                null,
+                3000
+            );
+
     }
 });
 
