@@ -7,12 +7,7 @@
             "start": "17:00",
             "end": null,
             "opponent": "open bots",
-            "goals": [
-                {
-                    "text": "win",
-                    "completed": false
-                }
-            ],
+            "goals": [],
             "notes": "review cache demos"
         },
         "Tuesday": {
@@ -28,12 +23,7 @@
             "start": "19:30",
             "end": null,
             "opponent": null,
-            "goals": [
-                {
-                    "text": "win",
-                    "completed": false
-                }
-            ],
+            "goals": [],
             "notes": null
         },
         "Thursday": {

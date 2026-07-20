@@ -7,12 +7,7 @@
             "start": "19:30",
             "end": null,
             "opponent": null,
-            "goals": [
-                {
-                    "text": "win",
-                    "completed": false
-                }
-            ],
+            "goals": [],
             "notes": null
         },
         "Tuesday": {
@@ -28,12 +23,7 @@
             "start": "19:30",
             "end": null,
             "opponent": null,
-            "goals": [
-                {
-                    "text": "win",
-                    "completed": false
-                }
-            ],
+            "goals": [],
             "notes": null
         },
         "Thursday": {

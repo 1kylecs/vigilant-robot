@@ -12,12 +12,10 @@ const cron = require("node-cron");
 
 
 
-const { Client,
+const {
+    Client,
     GatewayIntentBits,
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
+    EmbedBuilder
 } = require("discord.js");
 
 //bot intent
@@ -95,53 +93,6 @@ function getDayFromArgs(args) {
             .toFormat("cccc"),
         startIndex: 0
     };
-}
-
-//create goal buttons helper
-function createGoalButtons() {
-
-    const rows = [];
-
-    for (const day in schedule.weekDays) {
-
-        const event = schedule.weekDays[day];
-
-        if (!event.goals || event.goals.length === 0) {
-            continue;
-        }
-
-        let row = new ActionRowBuilder();
-
-        event.goals.forEach((goal, index) => {
-
-            const checkbox = goal.completed ? "✅" : "⬜";
-
-            const button = new ButtonBuilder()
-                .setCustomId(`goal_${day}_${index}`)
-                .setLabel(`${checkbox} ${goal.text}`)
-                .setStyle(
-                    goal.completed
-                        ? ButtonStyle.Success
-                        : ButtonStyle.Secondary
-                );
-
-
-            // Discord max is 5 buttons per row
-            if (row.components.length === 5) {
-                rows.push(row);
-                row = new ActionRowBuilder();
-            }
-
-            row.addComponents(button);
-
-        });
-
-        if (row.components.length > 0) {
-            rows.push(row);
-        }
-    }
-
-    return rows;
 }
 
 //timezone to team time conversion (PST)
@@ -289,23 +240,26 @@ function createScheduleMessage(user) {
     const embed = new EmbedBuilder()
         .setTitle("📅 CS2 Weekly Schedule")
         .setDescription(
-            `**Week of ${getWeekRange()}**`)
+            `**Week of ${getWeekRange()}**`
+        )
         .setTimestamp()
         .setFooter({
             text: `Updated by ${user.displayName ?? user.username}`
         })
         .setColor(0x00FF00);
 
+
     for (const day in schedule.weekDays) {
 
         const event = schedule.weekDays[day];
 
-        //skip empty days
+        // skip empty days
         if (event.event === null) {
             continue;
         }
 
-        let emoji = "";
+
+        let emoji = "📌";
 
         if (event.event === "Match") {
             emoji = "🏆";
@@ -313,18 +267,19 @@ function createScheduleMessage(user) {
         else if (event.event === "Practice") {
             emoji = "🎮";
         }
-        else {
-            emoji = "📌";
-        }
+
 
         let fieldText = `${emoji} **${event.event}**\n\n`;
 
+
+        // time
         if (event.start !== null) {
 
             const startTimestamp = createDiscordTimestamp(
                 day,
                 event.start
             );
+
 
             if (event.end !== null) {
 
@@ -333,36 +288,51 @@ function createScheduleMessage(user) {
                     event.end
                 );
 
-                fieldText += `⏰ **Time:** <t:${startTimestamp}:t> - <t:${endTimestamp}:t>\n`;
+                fieldText +=
+                    `⏰ **Time:** <t:${startTimestamp}:t> - <t:${endTimestamp}:t>\n`;
+
             }
             else {
-                fieldText += `⏰ **Time:** <t:${startTimestamp}:t>\n`;
+
+                fieldText +=
+                    `⏰ **Time:** <t:${startTimestamp}:t>\n`;
+
             }
         }
 
+
+        // opponent
         if (event.opponent) {
-            fieldText += `Against: ${event.opponent}\n`;
+
+            fieldText +=
+                `🥊 **Opponent:** ${event.opponent}\n`;
+
         }
 
+
+        // goals
         if (event.goals && event.goals.length > 0) {
 
-            fieldText += `Goals:\n`;
+            fieldText += `\n**Goals:**\n`;
 
             event.goals.forEach(goal => {
 
-                const checkbox = goal.completed ? "✅" : "⬜";
-
-                fieldText += `${checkbox} ${goal.text}\n`;
+                fieldText += `• ${goal.text}\n`;
 
             });
         }
 
+        // notes
         if (event.notes) {
 
-            fieldText += `Notes:\n`;
+            fieldText +=
+                `\n📝 **Notes:**\n`;
 
-            fieldText += `• ${event.notes}\n`;
+            fieldText +=
+                `• ${event.notes}\n`;
+
         }
+
 
         embed.addFields({
             name: `━━━━━━━━ ${day} ━━━━━━━━`,
@@ -370,9 +340,9 @@ function createScheduleMessage(user) {
         });
     }
 
+
     return {
-        embeds: [embed],
-        components: createGoalButtons()
+        embeds: [embed]
     };
 }
 
@@ -772,35 +742,6 @@ client.on("messageCreate", async (message) => {
         );
 
     }
-});
-
-//button click handler
-client.on("interactionCreate", async interaction => {
-
-    if (!interaction.isButton()) {
-        return;
-    }
-
-    checkForNewWeek();
-
-    const parts = interaction.customId.split("_");
-
-    if (parts[0] !== "goal") {
-        return;
-    }
-
-    const day = parts[1];
-    const index = Number(parts[2]);
-
-    schedule.weekDays[day].goals[index].completed = !schedule.weekDays[days].goals[index].compelted;
-
-    saveSchedule();
-
-    await interaction.update(
-        createScheduleMessage(
-            interaction.user
-        )
-    );
 });
 
 client.login(process.env.TOKEN);
