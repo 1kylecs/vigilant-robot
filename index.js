@@ -486,6 +486,23 @@ client.on("messageCreate", async (message) => {
 
             Clearing an event:
             \`!update friday event null\`
+
+
+            **Goals:**
+            \`!goals [day] goal, goal\`
+
+            Adds one or more goals to the current day or a specified day.
+
+            **Examples:**
+
+            Adding goals for today:
+            \`!goals Review demos, practice utility\`
+
+            Adding goals to a specific day:
+            \`!goals Wednesday Review executes, improve communication\`
+
+            Clearing goals:
+            \`!goals Monday null\`
             `;
 
         const help = await message.reply(helpMessage);
@@ -721,7 +738,7 @@ client.on("messageCreate", async (message) => {
             return;
         }
 
-        if(goalsText.toLowerCase() === "null"){
+        if (goalsText.toLowerCase() === "null") {
             schedule.weekDays[day].goals = [];
 
             saveSchedule();
