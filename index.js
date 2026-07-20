@@ -510,7 +510,7 @@ client.on("messageCreate", async (message) => {
         setTimeout(() => {
             help.delete().catch(() => { });
             message.delete().catch(() => { });
-        }, 300000);
+        }, 20000);
     }
 
     else if (message.content.startsWith("!update")) {
