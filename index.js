@@ -448,6 +448,12 @@ client.on("messageCreate", async (message) => {
             message.channel,
             message.author
         );
+
+        deleteMessagesAfter(
+            message,
+            null,
+            3000
+        );
     }
 
     else if (message.content === "!help") {
