@@ -441,9 +441,15 @@ client.once("clientReady", () => {
 
 //bot message event handler
 client.on("messageCreate", async (message) => {
+
     if (message.author.bot) return;
 
-    checkForNewWeek();
+    if(
+        message.content === "!schedule" || 
+        message.content.startsWith("!update") ||
+        message.content.startsWith("!goals")){
+        checkForNewWeek();
+    }
 
     if (message.content === "!schedule") {
         await updateScheduleMessage(
@@ -749,9 +755,11 @@ client.on("messageCreate", async (message) => {
 //button click handler
 client.on("interactionCreate", async interaction => {
 
-    if (interaction.isButton()){
+    if (!interaction.isButton()){
         return;
     }
+
+    checkForNewWeek();
 
     const parts = interaction.customId.split("_");
 
