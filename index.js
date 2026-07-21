@@ -405,26 +405,19 @@ client.once("clientReady", () => {
     //check for new week
     cron.schedule(
         "0 0 * * *",
-        async () => {
+        () => {
+
             console.log("Checking for new week...");
 
             if (checkForNewWeek()) {
-                try {
-                    const channel = await client.channels.fetch(
-                        config.scheduleChannelID
-                    );
+                console.log("Schedule automatically reset to default.");
 
-                    await updateScheduleMessage(
-                        channel,
-                        client.user
-                    );
-
-                    console.log("Schedule reset to default.");
-                }
-                catch (error) {
-                    console.log(error);
+                if(!config.scheduleChannelID){
+                    console.log("No schedule channel configured yet.");
+                    return;
                 }
             }
+
         }, {
         timezone: schedule.timezone
     }
@@ -534,7 +527,7 @@ client.on("messageCreate", async (message) => {
             day = possibleDay;
 
             updatesText = command
-                .substring(part[0].length)
+                .substring(parts[0].length)
                 .trim();
         }
         else {
