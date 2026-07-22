@@ -598,26 +598,21 @@ client.on("messageCreate", async (message) => {
             }
 
 
-            // event formatting
-            if (field === "event") {
+            //if value is null, set to null
+            if (value.toLowerCase() === "null"){
 
-                if (value.toLowerCase() === "null") {
+                value = null;
+            }
 
-                    value = null;
-
-                }
-                else {
-
-                    value =
-                        value.charAt(0).toUpperCase() +
-                        value.slice(1).toLowerCase();
-
-                }
+            //if value isnt null
+            if (field === "event" && value !== null){
+                 value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
             }
 
 
+
             // convert times to team timezone
-            if (field === "start" || field === "end") {
+            if ((field === "start" || field === "end") && value !== null) {
 
 
                 let timezone = schedule.timezone;
