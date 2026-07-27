@@ -468,7 +468,7 @@ client.once("clientReady", () => {
 
         }, {
         timezone: schedule.timezone
-        }
+    }
     );
 });
 
@@ -822,6 +822,23 @@ client.on("messageCreate", async (message) => {
             3000
         );
 
+    }
+
+    if (message.content === "!testreset") {
+
+        resetSchedule();
+
+        await updateScheduleMessage(
+            message.channel,
+            message.author,
+            false
+        );
+
+        deleteMessagesAfter(
+            message,
+            null,
+            3000
+        );
     }
 });
 
