@@ -3,14 +3,30 @@ require("dotenv").config();
 //include json files
 const schedule = require("./schedule.json");
 const defaultSchedule = require("./defaultSchedule.json");
-const config = require("./config.json");
+
+//load database
+const { getSettings, updateSettings } = require("./database");
 
 //imported libraries
 const fs = require("fs");
 const { DateTime } = require("luxon");
 const cron = require("node-cron");
 
+//ID variables
+let scheduleChannelID = null;
+let scheduleMessageID = null;
 
+getSettings((err, row) => {
+    if (err) {
+        console.error(err);
+        return;
+    }
+
+    scheduleChannelID = row.scheduleChannelID;
+    scheduleMessageID = row.scheduleMessageID;
+
+    console.log("Loaded database settings:", row);
+});
 
 const {
     Client,
@@ -349,20 +365,29 @@ function createScheduleMessage(user) {
 //update schedule
 async function updateScheduleMessage(channel, user, allowCreate = true) {
 
-    config.scheduleChannelID = channel.id;
+    console.log(
+        "updateScheduleMessage called:",
+        {
+            user: user.tag ?? user.username,
+            allowCreate: allowCreate,
+            time: new Date().toISOString()
+        }
+    );
+
+    scheduleChannelID = channel.id;
 
     const scheduleMessage = createScheduleMessage(user);
 
 
-    if (config.scheduleMessageID !== null) {
+    if (scheduleMessageID !== null) {
 
         try {
 
-            console.log("Channel ID:", config.scheduleChannelID);
-            console.log("Message ID:", config.scheduleMessageID);
+            console.log("Channel ID:", scheduleChannelID);
+            console.log("Message ID:", scheduleMessageID);
 
             const oldMessage = await channel.messages.fetch(
-                config.scheduleMessageID
+                scheduleMessageID
             );
 
             await oldMessage.edit(scheduleMessage);
@@ -374,45 +399,52 @@ async function updateScheduleMessage(channel, user, allowCreate = true) {
         catch (error) {
 
             console.log(error);
-            console.log("DEBUG: cron could not find schedule message");
+            console.log("Schedule message missing.");
 
-            if(allowCreate){
+            if (allowCreate) {
+
                 const newMessage = await channel.send(scheduleMessage);
 
-                config.scheduleMessageID = newMessage.id;
+                console.log("NEW DISCORD MESSAGE ID:", newMessage.id);
 
-                fs.writeFileSync(
-                    "./config.json",
-                    JSON.stringify(config, null, 4)
+                scheduleMessageID = newMessage.id;
+
+                updateSettings(
+                    scheduleChannelID,
+                    scheduleMessageID
                 );
 
-                console.log("Created new schedule:", config.scheduleMessageID);
+                console.log("Created new schedule:", scheduleMessageID);
+            }
+
+            else {
+                console.log("Schedule missing, message creation disabled.");
             }
 
         }
 
     }
 
-    else {
+    else if (allowCreate) {
 
         const newMessage = await channel.send(scheduleMessage);
 
-        config.scheduleMessageID = newMessage.id;
+        scheduleMessageID = newMessage.id;
 
-        fs.writeFileSync(
-            "./config.json",
-            JSON.stringify(config, null, 4)
-        );
+        updateSettings(
+            scheduleChannelID,
+            scheduleMessageID
+        )
 
-        console.log("Created new schedule:", config.scheduleMessageID);
+        console.log("Created new schedule:", scheduleMessageID);
 
     }
 }
 
 //connect succeful message
 client.once("clientReady", () => {
+
     console.log(`Logged in as ${client.user.tag}!`);
-    console.log("Loaded config:", config);
 
     //check for new week
     cron.schedule(
@@ -424,19 +456,19 @@ client.once("clientReady", () => {
             if (checkForNewWeek()) {
                 console.log("Schedule automatically reset to default.");
 
-                if (!config.scheduleChannelID) {
+                if (!scheduleChannelID) {
                     console.log("No schedule channel configured yet.");
                     return;
                 }
 
-                const channel = await client.channels.fetch(config.scheduleChannelID);
+                const channel = await client.channels.fetch(scheduleChannelID);
 
                 await updateScheduleMessage(channel, client.user, false);
             }
 
         }, {
         timezone: schedule.timezone
-    }
+        }
     );
 });
 
