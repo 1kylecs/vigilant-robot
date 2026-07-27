@@ -347,7 +347,7 @@ function createScheduleMessage(user) {
 }
 
 //update schedule
-async function updateScheduleMessage(channel, user) {
+async function updateScheduleMessage(channel, user, allowCreate = true) {
 
     config.scheduleChannelID = channel.id;
 
@@ -376,14 +376,17 @@ async function updateScheduleMessage(channel, user) {
             console.log(error);
             console.log("Old schedule not found. Creating new one.");
 
-            const newMessage = await channel.send(scheduleMessage);
+            if(allowCreate){
+                const newMessage = await channel.send(scheduleMessage);
 
-            config.scheduleMessageID = newMessage.id;
+                config.scheduleMessageID = newMessage.id;
 
-            fs.writeFileSync(
-                "./config.json",
-                JSON.stringify(config, null, 4)
-            );
+                fs.writeFileSync(
+                    "./config.json",
+                    JSON.stringify(config, null, 4)
+                );
+            }
+
         }
 
     }
@@ -423,7 +426,7 @@ client.once("clientReady", () => {
 
                 const channel = await client.channels.fetch(config.scheduleChannelID);
 
-                await updateScheduleMessage(channel, client.user);
+                await updateScheduleMessage(channel, client.user, false);
             }
 
         }, {
@@ -447,7 +450,8 @@ client.on("messageCreate", async (message) => {
     if (message.content === "!schedule") {
         await updateScheduleMessage(
             message.channel,
-            message.author
+            message.author,
+            true
         );
 
         deleteMessagesAfter(
@@ -680,7 +684,8 @@ client.on("messageCreate", async (message) => {
 
         await updateScheduleMessage(
             message.channel,
-            message.author
+            message.author,
+            true
         );
 
 
@@ -741,7 +746,8 @@ client.on("messageCreate", async (message) => {
 
             await updateScheduleMessage(
                 message.channel,
-                message.author
+                message.author,
+                true
             );
 
             deleteMessagesAfter(
@@ -769,7 +775,8 @@ client.on("messageCreate", async (message) => {
 
         await updateScheduleMessage(
             message.channel,
-            message.author
+            message.author,
+            true
         );
 
         deleteMessagesAfter(
