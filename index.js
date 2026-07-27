@@ -373,6 +373,7 @@ async function updateScheduleMessage(channel, user) {
 
         catch (error) {
 
+            console.log(error);
             console.log("Old schedule not found. Creating new one.");
 
             const newMessage = await channel.send(scheduleMessage);
