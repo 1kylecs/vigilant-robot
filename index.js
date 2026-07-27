@@ -404,8 +404,8 @@ client.once("clientReady", () => {
 
     //check for new week
     cron.schedule(
-        "0 0 * * *",
-        () => {
+        "* * * * *",
+        async () => {
 
             console.log("Checking for new week...");
 
@@ -416,6 +416,10 @@ client.once("clientReady", () => {
                     console.log("No schedule channel configured yet.");
                     return;
                 }
+
+                const channel = await client.channels.fetch(config.scheduleChannelID);
+
+                await updateScheduleMessage(channel, client.user);
             }
 
         }, {
