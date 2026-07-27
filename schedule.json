@@ -1,6 +1,6 @@
 {
     "timezone": "America/Los_Angeles",
-    "lastResetWeek": "2026-31",
+    "lastResetWeek": "1900-01",
     "weekDays": {
         "Monday": {
             "event": "Match",
