@@ -385,6 +385,8 @@ async function updateScheduleMessage(channel, user, allowCreate = true) {
                     "./config.json",
                     JSON.stringify(config, null, 4)
                 );
+
+                console.log("Created new schedule:", config.scheduleMessageID);
             }
 
         }
@@ -401,6 +403,8 @@ async function updateScheduleMessage(channel, user, allowCreate = true) {
             "./config.json",
             JSON.stringify(config, null, 4)
         );
+
+        console.log("Created new schedule:", config.scheduleMessageID);
 
     }
 }
