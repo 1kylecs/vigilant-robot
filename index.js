@@ -824,6 +824,7 @@ client.on("messageCreate", async (message) => {
 
     }
 
+    //test weekly reset
     if (message.content === "!testreset") {
 
         resetSchedule();
