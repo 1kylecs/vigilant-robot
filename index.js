@@ -374,7 +374,7 @@ async function updateScheduleMessage(channel, user, allowCreate = true) {
         catch (error) {
 
             console.log(error);
-            console.log("Old schedule not found. Creating new one.");
+            console.log("DEBUG: cron could not find schedule message");
 
             if(allowCreate){
                 const newMessage = await channel.send(scheduleMessage);
