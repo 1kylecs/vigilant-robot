@@ -412,6 +412,7 @@ async function updateScheduleMessage(channel, user, allowCreate = true) {
 //connect succeful message
 client.once("clientReady", () => {
     console.log(`Logged in as ${client.user.tag}!`);
+    console.log("Loaded config:", config);
 
     //check for new week
     cron.schedule(
