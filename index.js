@@ -358,6 +358,9 @@ async function updateScheduleMessage(channel, user) {
 
         try {
 
+            console.log("Channel ID:", config.scheduleChannelID);
+            console.log("Message ID:", config.scheduleMessageID);
+
             const oldMessage = await channel.messages.fetch(
                 config.scheduleMessageID
             );
@@ -412,7 +415,7 @@ client.once("clientReady", () => {
             if (checkForNewWeek()) {
                 console.log("Schedule automatically reset to default.");
 
-                if(!config.scheduleChannelID){
+                if (!config.scheduleChannelID) {
                     console.log("No schedule channel configured yet.");
                     return;
                 }
@@ -603,14 +606,14 @@ client.on("messageCreate", async (message) => {
 
 
             //if value is null, set to null
-            if (value.toLowerCase() === "null"){
+            if (value.toLowerCase() === "null") {
 
                 value = null;
             }
 
             //if value isnt null
-            if (field === "event" && value !== null){
-                 value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+            if (field === "event" && value !== null) {
+                value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
             }
 
 
