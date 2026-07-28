@@ -448,7 +448,7 @@ client.once("clientReady", () => {
 
     //check for new week
     cron.schedule(
-        "* * * * *",
+        "0 0 * * 1",
         async () => {
 
             console.log("Checking for new week...");
